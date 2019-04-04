@@ -202,8 +202,42 @@ class Dqn():
      
     
     
+    def update(reward, new_signal):
+        new_state = torch.Tensor(new_signal).float().unsqueeze(0)
+        self.memory.push((self.last_state,new_state,torch.LongTensor([int(self.last_action)]),torch.Tensor([self.last_reward]))
+        action = self.select_action(new_state)
+        if len(self.memory.memory) > 100:
+            batch_state,batch_next_state, batch_reward, batch_action = self.memory.sample(100)
+            self.learn(batch_state,batch_next_state, batch_reward, batch_action)
+        self.last_action = action
+        self.last_state = new_state
+        self.last_reward = reward
+        self.reward_window.append(reward)
+        if len(self.reward_window) > 1000:
+            del self.reward_windows[0]
+        return action
     
-    
+        
+   def score(self):
+       return sum(self.reward_window)/(len(self.reward_window)+1.)
+
+   def save(self):
+       torch.save({'state_dict': self.model.state_dict(),
+                   'optimizer': self.optimizer.state_dict,
+                   }, 'last_brain.pth')
+   def load(self):
+       if os.path.isfile('last_brain.pth'):
+           print("=> loading checkpoint...")
+           checkpoint = torch.load('last_brain.pth')
+           self.model.load_state_dict(checkpoint['state_dict'])
+           self.model.load_state_dict(checkpoint['optimizer'])
+           print("done")
+      else:
+          print("no checkpoint found...")
+         
+   
+       
+   
     
     
     
